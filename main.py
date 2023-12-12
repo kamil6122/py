@@ -51,7 +51,7 @@ def main():
         distances = []  # array of tuples: (sheep_number, distance)
         for sheep in sheep_array:
             if sheep.alive:
-                direction = random.randint(1, 4) # N, S, E, W
+                direction = random.randint(1, 4)  # N, S, E, W
                 match direction:
                     case 1:
                         sheep.y -= DISTANCE_SHEEP_MOVEMENT
@@ -80,7 +80,7 @@ def main():
 
         # if sheep is out of range of wolf attack
         else:
-            # wolf chases the sheep (not sure about the way)
+            # wolf chases the sheep
             chased_sheep_number = number_of_closest_sheep
             wolf.x += (closest_sheep.x - wolf.x) * (DISTANCE_WOLF_MOVEMENT / distance_of_closest_sheep)
             wolf.y += (closest_sheep.y - wolf.y) * (DISTANCE_WOLF_MOVEMENT / distance_of_closest_sheep)
@@ -115,6 +115,9 @@ def main():
         else:
             info += 'sheep: ' + str(chased_sheep_number) + ' is chased.'
         print(info)
+
+        if number_of_alive_sheep == 0:
+            break
 
     # after all rounds
 

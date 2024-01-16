@@ -21,10 +21,13 @@
                     <td>{{ row.id }}</td>
                     <td>{{ row.engine_displacement }}</td>
                     <td>{{ row.max_speed }}</td>
-                    <td>{{ row.fuel_type }}</td>
+                    <td>{{ row.type_of_fuel }}</td>
                 </tr>
             {% endfor %}
         </tbody>
     </table>
+    <form method="POST" action="{{ url_for('add') }}">
+        <button type="submit">Add</button>
+    </form>
 </body>
 </html>

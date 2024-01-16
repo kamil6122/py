@@ -3,23 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flask Form Example</title>
+    <title>Add car</title>
 </head>
 <body>
-    <h1>Flask Form Example</h1>
-    <form method="post" action="{{ url_for('index') }}">
+    <h1>Add car</h1>
+    <form method="post">
         {{ form.hidden_tag() }}
-        <label for="name">Engine displacement:</label>
-        {{ form.engine_displacement() }}
-        <br>
-        <label for="name">Max speed:</label>
-        {{ form.max_speed() }}
-        <br>
-        <label for="name">Type of fuel:</label>
-        {{ form.type_of_fuel() }}
-        <br>
 
-        {{ form.submit() }}
+        {{ form.engine_displacement.label }}: {{ form.engine_displacement() }}<br>
+        {{ form.max_speed.label }}: {{ form.max_speed() }}<br>
+        {{ form.type_of_fuel.label }}: {{ form.type_of_fuel() }}<br>
+
+        <input type="submit" value="Submit">
     </form>
 </body>
 </html>

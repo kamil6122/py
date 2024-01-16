@@ -22,12 +22,24 @@
                     <td>{{ row.engine_displacement }}</td>
                     <td>{{ row.max_speed }}</td>
                     <td>{{ row.type_of_fuel }}</td>
+                    <td>
+                        <form method="POST" action="/delete/{{ row.id }}">
+                            <input type="submit" value="Click Me" >
+                        </form>
+                    </td>
                 </tr>
             {% endfor %}
         </tbody>
     </table>
     <form method="POST" action="{{ url_for('add') }}">
         <button type="submit">Add</button>
+    </form>
+    <form method="POST">
+        {{ form.hidden_tag() }}
+
+        {{ form.car_id.label }}: {{ form.car_id() }}<br>
+
+        <input type="submit" value="Submit">
     </form>
 </body>
 </html>

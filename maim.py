@@ -45,6 +45,10 @@ class DeleteCarForm(FlaskForm):
     submit = SubmitField('Delete')
 
 
+class ConfirmForm(FlaskForm):
+    submit = SubmitField('Confirm')
+
+
 def validate_and_add(engine_displacement, max_speed, type_of_fuel):
     # if type(engine_displacement) is not float or type(max_speed) is not float:
     #     print("One of values is not number")
@@ -87,7 +91,15 @@ def post_data():
 
 @app.route('/api/data/<string:id>', methods=['DELETE'])
 def delete_row(item_id):
-    available_rows = getquery('SELECT id FROM test_table')
+    # available_rows = []
+    q = getquery('SELECT id FROM test_table')
+    available_rows = [item[0] for item in q]
+    # for a in q:
+    #     num, _ = a
+    #     available_rows.append(num)
+    print(item_id)
+    print(int(item_id))
+    print(available_rows)
     if int(item_id) not in available_rows:
         pass  # ERROR MESSAGE 404
     else:
@@ -127,10 +139,17 @@ def add():
 
 @app.route('/delete/<car_id>', methods=["POST"])
 def delete_id(car_id):
-    print('widzisz mnie?')
-    delete_row(car_id)
+    # print('widzisz mnie?')
+    # confirm_form = ConfirmForm()
+
     # return redirect(url_for('index'))
-    return render_template('delete.html')
+    return render_template('delete.html', car_id=car_id)
+
+
+@app.route('/deleting/<car_id>', methods=["POST"])
+def deleting(car_id):
+    delete_row(car_id)
+    return redirect(url_for('index'))
 
 
 if __name__ == '__main__':

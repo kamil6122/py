@@ -6,6 +6,9 @@
     <title></title>
 </head>
 <body>
-    <h1>Deleted</h1>
+    <h1>Delete car with id = {{ car_id }}?</h1>
+    <form method="POST" action="/deleting/{{ car_id }}">
+        <button type="submit">Yes</button>
+    </form>
 </body>
 </html>

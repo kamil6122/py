@@ -147,13 +147,12 @@ def delete_id(car_id):
     available_rows = [item[0] for item in q]
     if int(car_id) not in available_rows:
         return render_template('error404.html'), 404
-    return render_template('delete.html', car_id=car_id)
+    form = ConfirmForm()
+    if form.validate():
+        delete_row(car_id)
+        return redirect(url_for('index'))
 
-
-@app.route('/deleting/<car_id>', methods=["POST"])
-def deleting(car_id):
-    delete_row(car_id)
-    return redirect(url_for('index'))
+    return render_template('delete.html', car_id=car_id, form=form)
 
 
 if __name__ == '__main__':

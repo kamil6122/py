@@ -7,8 +7,9 @@
 </head>
 <body>
     <h1>Delete car with id = {{ car_id }}?</h1>
-    <form method="POST" action="/deleting/{{ car_id }}">
-        <button type="submit">Yes</button>
+    <form method="POST">
+        {{ form.hidden_tag() }}
+        <input type="submit" value="Yes">
     </form>
 </body>
 </html>

@@ -1,8 +1,8 @@
 import psycopg2
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, abort, jsonify
 from flask_wtf import FlaskForm
 from wtforms import FloatField, SubmitField, SelectField, RadioField, IntegerField
-from wtforms.validators import InputRequired
+from wtforms.validators import InputRequired, NumberRange
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret_key'
@@ -32,16 +32,14 @@ def getquery(sql):
 # FORM CLASSES
 
 class AddCarForm(FlaskForm):
-    engine_displacement = FloatField('Engine displacement')
-    max_speed = FloatField('Max speed')
-    type_of_fuel = IntegerField('Type of fuel')
-    # type_of_fuel = SelectField('Type', choices=[(1, '1: diesel'), (2, '2: gasoline'), (3, '3: electric'),
-    #                             (4, '4: hydrogen'), (5, '5: LPG'), (6, '6: hybrid')])
+    engine_displacement = FloatField('Engine displacement', validators=[NumberRange(min=0.1)])
+    max_speed = FloatField('Max speed', validators=[NumberRange(min=0.1)])
+    type_of_fuel = IntegerField('Type of fuel', validators=[NumberRange(min=1, max=6)])
     submit = SubmitField('Add')
 
 
 class DeleteCarForm(FlaskForm):
-    car_id = IntegerField('Delete id')
+    car_id = IntegerField('Delete id', validators=[NumberRange(min=1)])
     submit = SubmitField('Delete')
 
 
@@ -49,16 +47,20 @@ class ConfirmForm(FlaskForm):
     submit = SubmitField('Confirm')
 
 
-def validate_and_add(engine_displacement, max_speed, type_of_fuel):
-    # if type(engine_displacement) is not float or type(max_speed) is not float:
-    #     print("One of values is not number")
-    #     return False
-    # if type(type_of_fuel) is not int:
-    #     return False
+def add_to_db(engine_displacement, max_speed, type_of_fuel):
     insertquery(
         '''INSERT INTO test_table VALUES(DEFAULT, {}, {}, '{}')'''.format(engine_displacement, max_speed, type_of_fuel))
     return True
 
+# ERRORS
+
+@app.errorhandler(404)
+def resource_not_found(e):
+    return jsonify(error=str(e)), 404
+
+@app.errorhandler(400)
+def invalid_data(e):
+    return jsonify(error=str(e)), 400
 # APIS
 
 @app.route('/api/data')
@@ -81,29 +83,23 @@ def get_data():
 @app.route('/api/data', methods=['POST'])
 def post_data():
     data_json = request.get_json()
-    engine_displacement, max_speed, type_of_fuel = data_json
-    result = validate_and_add(engine_displacement, max_speed, type_of_fuel)
-    if result is False:
-        pass  # error
+    if isinstance(data_json['engine_displacement'], (int, float)) and isinstance(data_json['max_speed'], (int, float)) and type(data_json['type_of_fuel']) is int:
+        add_to_db(data_json['engine_displacement'], data_json['max_speed'], data_json['type_of_fuel'])
+        last_id_query = getquery('SELECT LASTVAL()')
+        return_json = {'new_primary_key': last_id_query[0][0]}
+        return jsonify(return_json)
     else:
-        pass  # cos tam ze sie udalo
+        abort(400, 'Invalid data')
 
-
-@app.route('/api/data/<string:id>', methods=['DELETE'])
-def delete_row(item_id):
-    # available_rows = []
+@app.route('/api/data/<string:car_id>', methods=['DELETE'])
+def delete_row(car_id):
     q = getquery('SELECT id FROM test_table')
     available_rows = [item[0] for item in q]
-    # for a in q:
-    #     num, _ = a
-    #     available_rows.append(num)
-    print(item_id)
-    print(int(item_id))
-    print(available_rows)
-    if int(item_id) not in available_rows:
-        pass  # ERROR MESSAGE 404
+    if int(car_id) not in available_rows:
+        abort(404, '''ID doesn't exist''')
     else:
-        insertquery('DELETE FROM test_table WHERE id = {}'.format(item_id))
+        insertquery('DELETE FROM test_table WHERE id = {}'.format(car_id))
+        return jsonify({'deleted_record_primary_key': car_id})
 
 
 # ROUTES
@@ -111,38 +107,32 @@ def delete_row(item_id):
 @app.route('/')
 def index():
     data = get_data()
-    form = DeleteCarForm()
-    print(form.car_id.data)
-    print(form.validate_on_submit())
-    if form.validate_on_submit():
-        car_id = form.car_id.data
-        delete_row(car_id)
-        print('wee?')
-        return redirect(url_for('delete/' + str(car_id)))
-
-    return render_template('index.html', data=data, form=form)
+    return render_template('index.html', data=data)
 
 @app.route('/add', methods=['GET', 'POST'])
 def add():
     form = AddCarForm()
-    if form.validate_on_submit():
-        engine_displacement = form.engine_displacement.data
-        max_speed = form.max_speed.data
-        type_of_fuel = form.type_of_fuel.data
-        print(engine_displacement, max_speed, type_of_fuel)
-        result = validate_and_add(engine_displacement, max_speed, type_of_fuel)
-
-        return redirect(url_for('index'))
+    # DO ZROBIENIA TE KODZIKI I WGL
+    if request.method == "POST":
+        if form.validate_on_submit():
+            engine_displacement = form.engine_displacement.data
+            max_speed = form.max_speed.data
+            type_of_fuel = form.type_of_fuel.data
+            result = add_to_db(engine_displacement, max_speed, type_of_fuel)
+            return redirect(url_for('index'))
+        else:
+            abort(400, 'Invalid arguments')
 
     return render_template('add.html', form=form)
 
 
+
 @app.route('/delete/<car_id>', methods=["POST"])
 def delete_id(car_id):
-    # print('widzisz mnie?')
-    # confirm_form = ConfirmForm()
-
-    # return redirect(url_for('index'))
+    q = getquery('SELECT id FROM test_table')
+    available_rows = [item[0] for item in q]
+    if int(car_id) not in available_rows:
+        abort(404, '''ID doesn't exist''')
     return render_template('delete.html', car_id=car_id)
 
 
@@ -151,6 +141,10 @@ def deleting(car_id):
     delete_row(car_id)
     return redirect(url_for('index'))
 
+# ERROR HANDLER
+# @app.errorhandler(400)
+# def bad_request_error(error):
+#     return render_template('400_error.html'), 400
 
 if __name__ == '__main__':
     app.run(debug=True)

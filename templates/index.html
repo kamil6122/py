@@ -9,6 +9,7 @@
     <table border="1">
         <thead>
             <tr>
+                <th>Seq</th>
                 <th>ID</th>
                 <th>Engine displacement</th>
                 <th>Max speed</th>
@@ -18,6 +19,7 @@
         <tbody>
             {% for row in data %}
                 <tr>
+                    <td>{{ loop.index }}</td>
                     <td>{{ row.id }}</td>
                     <td>{{ row.engine_displacement }}</td>
                     <td>{{ row.max_speed }}</td>
@@ -31,15 +33,8 @@
             {% endfor %}
         </tbody>
     </table>
-    <form method="POST" action="{{ url_for('add') }}">
-        <button type="submit">Add</button>
-    </form>
-    <form method="POST">
-        {{ form.hidden_tag() }}
-
-        {{ form.car_id.label }}: {{ form.car_id() }}<br>
-
-        <input type="submit" value="Submit">
+    <form method="GET" action="{{ url_for('add') }}">
+        <button>Add</button>
     </form>
 </body>
 </html>

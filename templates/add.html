@@ -14,7 +14,10 @@
         {{ form.max_speed.label }}: {{ form.max_speed() }}<br>
         {{ form.type_of_fuel.label }}: {{ form.type_of_fuel() }}<br>
 
-        <input type="submit" value="Submit">
+        <input type="submit" value="Add">
+    </form>
+    <form method="GET" action="{{ url_for('index') }}">
+        <button>Return</button>
     </form>
 </body>
 </html>

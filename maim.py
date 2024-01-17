@@ -35,7 +35,7 @@ def getquery(sql):
 class AddCarForm(FlaskForm):
     engine_displacement = FloatField('Engine displacement', validators=[InputRequired(), NumberRange(min=0.1)])
     max_speed = FloatField('Max speed', validators=[InputRequired(), NumberRange(min=0.1)])
-    type_of_fuel = IntegerField('Type of fuel', validators=[InputRequired(), NumberRange(min=1, max=6)])
+    type_of_fuel = IntegerField('Type of fuel (1-6)', validators=[InputRequired(), NumberRange(min=1, max=6)])
     submit = SubmitField('Add')
 
 
@@ -50,7 +50,7 @@ class ConfirmForm(FlaskForm):
 
 def add_to_db(engine_displacement, max_speed, type_of_fuel):
     insertquery(
-        '''INSERT INTO test_table VALUES(DEFAULT, {}, {}, '{}')'''.format(engine_displacement, max_speed, type_of_fuel))
+        '''INSERT INTO test_table VALUES(DEFAULT, {}, {}, {})'''.format(engine_displacement, max_speed, type_of_fuel))
 
 # ERRORS
 
@@ -96,8 +96,7 @@ def post_data():
             and type(data_json['type_of_fuel']) is int):
         add_to_db(data_json['engine_displacement'], data_json['max_speed'], data_json['type_of_fuel'])
         last_id_query = getquery('SELECT LASTVAL()')
-        return_json = {'new_primary_key': last_id_query[0][0]}
-        return jsonify(return_json)
+        return jsonify({'new_record_primary_key': last_id_query[0][0]})
     else:
         response = jsonify({'message': 'Invalid data'})
         response.status_code = 400

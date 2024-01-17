@@ -48,7 +48,10 @@ class ConfirmForm(FlaskForm):
     submit = SubmitField('Confirm')
 
 
-def add_to_db(engine_displacement, max_speed, type_of_fuel):
+def add_to_db(json):
+    engine_displacement = json['engine_displacement']
+    max_speed = json['max_speed']
+    type_of_fuel = json['type_of_fuel']
     insertquery(
         '''INSERT INTO test_table VALUES(DEFAULT, {}, {}, {})'''.format(engine_displacement, max_speed, type_of_fuel))
 
@@ -57,18 +60,13 @@ def add_to_db(engine_displacement, max_speed, type_of_fuel):
 
 @app.errorhandler(404)
 def resource_not_found(e):
-    # if page:
-    #     return render_template('error400.html'), 404
-    # else:
     return jsonify(error=str(e)), 404
 
 
 @app.errorhandler(400)
 def invalid_data(e):
-    # if page:
-    #     return render_template('error400.html'), 400
-    # else:
     return jsonify(error=str(e)), 400
+
 # APIS
 
 
@@ -94,7 +92,7 @@ def post_data():
     data_json = request.get_json()
     if (isinstance(data_json['engine_displacement'], (int, float)) and isinstance(data_json['max_speed'], (int, float))
             and type(data_json['type_of_fuel']) is int):
-        add_to_db(data_json['engine_displacement'], data_json['max_speed'], data_json['type_of_fuel'])
+        add_to_db(data_json)
         last_id_query = getquery('SELECT LASTVAL()')
         return jsonify({'new_record_primary_key': last_id_query[0][0]})
     else:
@@ -130,10 +128,11 @@ def add():
 
     if request.method == "POST":
         if form.validate_on_submit():
-            engine_displacement = form.engine_displacement.data
-            max_speed = form.max_speed.data
-            type_of_fuel = form.type_of_fuel.data
-            add_to_db(engine_displacement, max_speed, type_of_fuel)
+            new_json = {
+                'engine_displacement': form.engine_displacement.data,
+                'max_speed': form.max_speed.data,
+                'type_of_fuel': form.type_of_fuel.data}
+            add_to_db(new_json)
             return redirect(url_for('index'))
         else:
             return render_template('error400.html'), 400

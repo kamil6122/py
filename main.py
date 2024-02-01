@@ -3,8 +3,8 @@ from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
 # app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://admin@localhost:5432/py3'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:admin@localhost:5432/py3'
-# app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://GreenGame:GreenGamePassword@localhost:42069/GreenGameDB'
+# app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:admin@localhost:5432/py3'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://GreenGame:GreenGamePassword@localhost:42069/GreenGameDB'
 db = SQLAlchemy(app)
 
 
@@ -31,7 +31,7 @@ def validate_data(engine_displacement, max_speed, type_of_fuel):
         return False
     if not isinstance(type_of_fuel, int):
         return False
-    if engine_displacement < 0 or max_speed < 0:
+    if engine_displacement <= 0 or max_speed <= 0:
         return False
     if type_of_fuel < 1 or type_of_fuel > 6:
         return False
@@ -87,12 +87,11 @@ def add():
         r_max_speed = request.form['max_speed']
         r_type_of_fuel = request.form['type_of_fuel']
 
-        if r_engine_displacement and r_max_speed and r_type_of_fuel:
-            # musimy zamienić na floaty i inta bo normalnie są stringami
-            r_engine_displacement = float(r_engine_displacement)
-            r_max_speed = float(r_max_speed)
+        if r_engine_displacement and r_max_speed and r_type_of_fuel:            
             try:
                 r_type_of_fuel = int(r_type_of_fuel)
+                r_engine_displacement = float(r_engine_displacement)
+                r_max_speed = float(r_max_speed)
             except ValueError:
                 return render_template('error400.html'), 400
             if validate_data(r_engine_displacement, r_max_speed, r_type_of_fuel):

@@ -1,6 +1,0 @@
-CREATE TABLE test_table (
-    id SERIAL PRIMARY KEY,
-    engine_displacement FLOAT,
-    max_speed FLOAT,
-    type_of_fuel INT
-);

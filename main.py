@@ -1,4 +1,3 @@
-import psycopg2
 import sqlalchemy
 from dataclasses import dataclass
 from sqlalchemy.orm import declarative_base, Session
@@ -33,19 +32,24 @@ Session = sessionmaker(engine)
 
 
 class AddCarForm(FlaskForm):
-    engine_displacement = FloatField('Engine displacement', validators=[InputRequired(), NumberRange(min=0.1)])
-    max_speed = FloatField('Max speed', validators=[InputRequired(), NumberRange(min=0.1)])
+    engine_displacement = FloatField('Engine displacement', validators=[InputRequired(), NumberRange(min=0)])
+    max_speed = FloatField('Max speed', validators=[InputRequired(), NumberRange(min=0)])
     type_of_fuel = IntegerField('Type of fuel (1-6)', validators=[InputRequired(), NumberRange(min=1, max=6)])
     submit = SubmitField('Add')
 
 
-class DeleteCarForm(FlaskForm):
-    car_id = IntegerField('Delete id', validators=[NumberRange(min=1)])
-    submit = SubmitField('Delete')
-
-
-class ConfirmForm(FlaskForm):
-    submit = SubmitField('Confirm')
+def validate_data(engine_displacement, max_speed, type_of_fuel):
+    if not isinstance(engine_displacement, (int, float)):
+        return False
+    if not isinstance(max_speed, (int, float)):
+        return False
+    if not isinstance(type_of_fuel, int):
+        return False
+    if engine_displacement < 0 or max_speed < 0:
+        return False
+    if type_of_fuel < 1 or type_of_fuel > 6:
+        return False
+    return True
 
 
 @app.route('/api/data', methods=["GET"])
@@ -58,8 +62,7 @@ def get_data():
 @app.route('/api/data', methods=['POST'])
 def post_data():
     new_json = request.get_json()
-    if (isinstance(new_json['engine_displacement'], (int, float)) and isinstance(new_json['max_speed'], (int, float))
-            and type(new_json['type_of_fuel']) is int):
+    if validate_data(new_json['engine_displacement'], new_json['max_speed'], new_json['type_of_fuel']):
         new_object = Car(**new_json)
         with Session(bind=engine) as session:
             session.add(new_object)
@@ -99,6 +102,9 @@ def index():
 def add():
     form = AddCarForm()
 
+    # jesli bedzie potrzeba, to walidacje sie doda tu tez przez validate_data(), znaczy i tak zrobilem tak jak bylo w
+    # formsach ale nwm jak to u ciebie bedzie
+
     if request.method == "POST":
         if form.validate_on_submit():
             new_car = Car(
@@ -115,21 +121,15 @@ def add():
     return render_template('add.html', form=form)
 
 
-# TODO: NAPRAWIC !!!!!!!!!!!!!!!!!
-
 @app.route('/delete/<car_id>', methods=["POST"])
 def delete_id(car_id):
     with Session(bind=engine) as session:
         if not session.query(exists().where(Car.id == car_id)).scalar():
             return render_template('error404.html'), 404
-
-        form = ConfirmForm()
-        if form.validate():
+        else:
             session.query(Car).filter(Car.id == car_id).delete()
             session.commit()
             return redirect(url_for('index'))
-
-    return render_template('delete.html', car_id=car_id, form=form)
 
 
 if __name__ == '__main__':

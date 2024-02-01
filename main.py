@@ -1,41 +1,25 @@
-import sqlalchemy
-from dataclasses import dataclass
-from sqlalchemy.orm import declarative_base, Session
-from sqlalchemy import Column, Integer, Float, exists
 from flask import Flask, render_template, request, redirect, url_for, jsonify
-from flask_wtf import FlaskForm
-from sqlalchemy.orm import sessionmaker
-from wtforms import FloatField, SubmitField, IntegerField
-from wtforms.validators import InputRequired, NumberRange
+from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'secret_key'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://admin@localhost:5432/py3'
+# app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://GreenGame:GreenGamePassword@localhost:42069/GreenGameDB'
+db = SQLAlchemy(app)
 
-engine = sqlalchemy.create_engine("postgresql+psycopg2://postgres:admin@localhost:5432/py3")
-base = declarative_base()
-
-
-@dataclass
-class Car(base):
+class Car(db.Model):
     __tablename__ = "cars"
-    id: int = Column(Integer, primary_key=True)
-    engine_displacement: float = Column(Float)
-    max_speed: float = Column(Float)
-    type_of_fuel: int = Column(Integer)
+    id = db.Column(db.Integer, primary_key=True)
+    engine_displacement= db.Column(db.Float)
+    max_speed = db.Column(db.Float)
+    type_of_fuel = db.Column(db.Integer)
 
     def as_dict(self):
-        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
-
-
-base.metadata.create_all(engine)
-Session = sessionmaker(engine)
-
-
-class AddCarForm(FlaskForm):
-    engine_displacement = FloatField('Engine displacement', validators=[InputRequired(), NumberRange(min=0)])
-    max_speed = FloatField('Max speed', validators=[InputRequired(), NumberRange(min=0)])
-    type_of_fuel = IntegerField('Type of fuel (1-6)', validators=[InputRequired(), NumberRange(min=1, max=6)])
-    submit = SubmitField('Add')
+        return {
+            'id': self.id,
+            'engine_displacement': self.engine_displacement,
+            'max_speed': self.max_speed,
+            'type_of_fuel': self.type_of_fuel
+            }
 
 
 def validate_data(engine_displacement, max_speed, type_of_fuel):
@@ -51,86 +35,85 @@ def validate_data(engine_displacement, max_speed, type_of_fuel):
         return False
     return True
 
-
+#dupa
 @app.route('/api/data', methods=["GET"])
 def get_data():
-    with Session(bind=engine) as session:
-        results = session.query(Car).all()
+    results = Car.query.all() 
     return jsonify([r.as_dict() for r in results])
 
-
+##dupa
 @app.route('/api/data', methods=['POST'])
 def post_data():
     new_json = request.get_json()
     if validate_data(new_json['engine_displacement'], new_json['max_speed'], new_json['type_of_fuel']):
-        new_object = Car(**new_json)
-        with Session(bind=engine) as session:
-            session.add(new_object)
-            session.commit()
-            return jsonify({'new_record_primary_key': new_object.id})
+        new_car = Car(
+            engine_displacement=new_json['engine_displacement'],
+            max_speed=new_json['max_speed'],
+            type_of_fuel=new_json['type_of_fuel'])
+        db.session.add(new_car)
+        db.session.commit()
+        return jsonify({'id': new_car.id})
     else:
-        response = jsonify({'message': 'Invalid data'})
-        response.status_code = 400
-        return response
+        return jsonify({'message': 'Invalid data'}), 400
 
-
+#dupa
 @app.route('/api/data/<int:car_id>', methods=['DELETE'])
 def delete_row(car_id):
-    with Session(bind=engine) as session:
-        exists_bool = session.query(exists().where(Car.id == car_id)).scalar()
-        if not exists_bool:
-            response = jsonify({'message': 'Record not found'})
-            response.status_code = 404
-            return response
+        car = db.session.query.get(car_id)
+        if car == None:
+            return jsonify({'message': 'Car not found'}), 404
         else:
-            session.query(Car).filter(Car.id == car_id).delete()
-            session.commit()
-            return jsonify({'deleted_record_primary_key': int(car_id)})
-
+            db.session.delete(car)
+            db.session.commit()
+            return jsonify({'message': 'Car deleted'})
 
 # ROUTES
-
 @app.route('/')
 def index():
-    with Session(bind=engine) as session:
-        results = session.query(Car).all()
+    results = Car.query.all()
     data = [r.as_dict() for r in results]
     return render_template('index.html', data=data)
 
-
+#dupa
 @app.route('/add', methods=['GET', 'POST'])
 def add():
-    form = AddCarForm()
-
-    # jesli bedzie potrzeba, to walidacje sie doda tu tez przez validate_data(), znaczy i tak zrobilem tak jak bylo w
-    # formsach ale nwm jak to u ciebie bedzie
-
     if request.method == "POST":
-        if form.validate_on_submit():
-            new_car = Car(
-                engine_displacement=form.engine_displacement.data,
-                max_speed=form.max_speed.data,
-                type_of_fuel=form.type_of_fuel.data)
-            with Session(bind=engine) as session:
-                session.add(new_car)
-                session.commit()
-            return redirect(url_for('index'))
+        r_engine_displacement = request.form['engine_displacement']
+        r_max_speed = request.form['max_speed']
+        r_type_of_fuel = request.form['type_of_fuel']
+
+        if r_engine_displacement and r_max_speed and r_type_of_fuel:
+            #musimy zamienić na floaty i inta bo normalnie są stringami
+            r_engine_displacement = float(r_engine_displacement)
+            r_max_speed = float(r_max_speed)
+            try:
+                r_type_of_fuel = int(r_type_of_fuel)
+            except ValueError:
+                return render_template('error400.html'), 400
+            if validate_data(r_engine_displacement, r_max_speed, r_type_of_fuel):
+                new_car = Car(
+                    engine_displacement=request.form['engine_displacement'],
+                    max_speed=request.form['max_speed'],
+                    type_of_fuel=request.form['type_of_fuel'])
+                db.session.add(new_car)
+                db.session.commit()
+                return redirect(url_for('index'))
         else:
             return render_template('error400.html'), 400
+    return render_template('add.html')
 
-    return render_template('add.html', form=form)
-
-
-@app.route('/delete/<car_id>', methods=["POST"])
+@app.route('/delete/<int:car_id>', methods=["POST"])
 def delete_id(car_id):
-    with Session(bind=engine) as session:
-        if not session.query(exists().where(Car.id == car_id)).scalar():
-            return render_template('error404.html'), 404
-        else:
-            session.query(Car).filter(Car.id == car_id).delete()
-            session.commit()
-            return redirect(url_for('index'))
+    car = Car.query.get(car_id)
+    if car == None:
+        return render_template('error404.html'), 404
+    else:
+        db.session.delete(car)
+        db.session.commit()
+        return redirect(url_for('index'))
 
 
 if __name__ == '__main__':
+    with app.app_context():
+        db.create_all()
     app.run(debug=True)

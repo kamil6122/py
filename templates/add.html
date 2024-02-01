@@ -8,11 +8,14 @@
 <body>
     <h1>Add car</h1>
     <form method="post">
-        {{ form.hidden_tag() }}
+        <label for="engine_displacement">Engine displacement</label>
+        <input type="number" step="any" name="engine_displacement" required><br>
 
-        {{ form.engine_displacement.label }}: {{ form.engine_displacement() }}<br>
-        {{ form.max_speed.label }}: {{ form.max_speed() }}<br>
-        {{ form.type_of_fuel.label }}: {{ form.type_of_fuel() }}<br>
+        <label for="max_speed">Max speed</label>
+        <input type="number" step="any" name="max_speed" required><br>
+
+        <label for="type_of_fuel">Fuel type</label>
+        <input type="number" name="type_of_fuel" required><br>
 
         <input type="submit" value="Add">
     </form>

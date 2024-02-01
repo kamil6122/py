@@ -74,7 +74,7 @@ def post_data():
         return response
 
 
-@app.route('/api/data/<string:car_id>', methods=['DELETE'])
+@app.route('/api/data/<int:car_id>', methods=['DELETE'])
 def delete_row(car_id):
     with Session(bind=engine) as session:
         exists_bool = session.query(exists().where(Car.id == car_id)).scalar()

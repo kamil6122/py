@@ -115,6 +115,8 @@ def add():
     return render_template('add.html', form=form)
 
 
+# TODO: NAPRAWIC !!!!!!!!!!!!!!!!!
+
 @app.route('/delete/<car_id>', methods=["POST"])
 def delete_id(car_id):
     with Session(bind=engine) as session:
